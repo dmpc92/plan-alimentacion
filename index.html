@@ -26,7 +26,7 @@
   h1{font-size:20px;margin:4px 0 2px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
   nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:5}
-  nav button{flex:1;max-width:160px;background:none;border:0;padding:12px 4px 14px;font:inherit;font-size:13px;color:var(--muted);cursor:pointer}
+  nav button{flex:1;max-width:140px;background:none;border:0;padding:12px 2px 14px;font:inherit;font-size:12px;color:var(--muted);cursor:pointer}
   nav button.on{color:var(--acc);font-weight:600}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
   .meal-h{display:flex;align-items:center;gap:10px;cursor:pointer}
@@ -81,6 +81,23 @@
     </div>
     <div id="meals"></div>
     <div class="note" style="margin:4px 2px 12px">Pesá el arroz y la avena secos, y el pollo crudo. Si cocinás el pollo en tanda, cargá tu factor de cocción en <b>Ajustes</b> para ver el peso cocido exacto.</div>
+  </section>
+
+  <!-- COMPRA SEMANAL -->
+  <section id="v-compra" class="hide">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap">
+        <button class="btn ghost" id="wk-prev" aria-label="Semana anterior">‹</button>
+        <div style="text-align:center"><h3 style="margin:0" id="wk-title">Semana</h3><div class="note" style="margin:2px 0 0" id="wk-range"></div></div>
+        <button class="btn ghost" id="wk-next" aria-label="Semana siguiente">›</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Compra semanal</h3><span class="pill" id="wk-count"></span></div>
+      <table><thead><tr><th style="width:34px"></th><th>Alimento</th><th>Para 7 días</th><th>Comprar</th></tr></thead><tbody id="wk-list"></tbody></table>
+      <div class="note">Cantidades en crudo o seco, para 4 comidas por día los 7 días. Si cambiás algo por un intercambiable, ajustá la compra de ese alimento.</div>
+      <button class="btn ghost" id="wk-clear" style="margin-top:10px">Desmarcar todo</button>
+    </div>
   </section>
 
   <!-- PESO -->
@@ -162,6 +179,7 @@
 
 <nav>
   <button data-v="hoy" class="on">Hoy</button>
+  <button data-v="compra">Compra</button>
   <button data-v="peso">Peso</button>
   <button data-v="eq">Intercambiables</button>
   <button data-v="aj">Ajustes</button>
@@ -246,7 +264,7 @@ function renderEq(){
 }
 
 /* ---------- Estado ---------- */
-const S = { checks:{}, pesos:[], factors:{...DEF} };
+const S = { checks:{}, pesos:[], factors:{...DEF}, compras:{} };
 const today = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 const $ = s => document.querySelector(s);
 const fmt = (x,d=0) => Number(x).toLocaleString('es-UY',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -337,6 +355,44 @@ function toggle(id){
   },600);
 }
 
+/* ---------- Render: Compra semanal ---------- */
+const SHOP = [
+  { id:'pollo', n:'Pechuga de pollo', q:'3,5 kg', buy:'3,5 kg (500 g/día)' },
+  { id:'huevos', n:'Huevos', q:'49 u', buy:'4 maples de 12 + 1', note:'35 enteros + 14 para claras. Con claras líquidas en botella: 35 huevos (3 maples) + ~460 g de claras.' },
+  { id:'avena', n:'Avena', q:'560 g', buy:'1 paquete de 1 kg (sobra)' },
+  { id:'banana', n:'Bananas', q:'7 u', buy:'7 medianas' },
+  { id:'arroz', n:'Arroz blanco', q:'1,26 kg', buy:'2 paquetes de 1 kg (sobra)' },
+  { id:'manteca', n:'Manteca', q:'168 g', buy:'1 pan de 200 g' },
+  { id:'atun', n:'Atún al agua', q:'7 latas', buy:'7 latas' },
+  { id:'kiwi', n:'Kiwis', q:'14 u', buy:'14 (2/día)' },
+];
+let wkOffset = new Date().getDay()===0 ? 1 : 0; // el domingo ya muestra la semana que viene
+function weekStart(off){ const d=new Date(today()+'T12:00:00'); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow+off*7); return d; }
+const iso = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
+function renderCompra(){
+  const a=weekStart(wkOffset), b=new Date(a); b.setDate(b.getDate()+6);
+  const key=iso(a), ch=(S.compras[key]||{});
+  const f=d=>d.toLocaleDateString('es-UY',{weekday:'short',day:'numeric',month:'short'});
+  $('#wk-title').textContent = wkOffset===0?'Esta semana':wkOffset===1?'Semana que viene':wkOffset===-1?'Semana pasada':'Semana';
+  $('#wk-range').textContent = 'Del '+f(a)+' al '+f(b);
+  const n=SHOP.filter(i=>ch[i.id]).length;
+  $('#wk-count').textContent = n+'/'+SHOP.length;
+  $('#wk-list').innerHTML = SHOP.map(i=>`<tr class="${ch[i.id]?'done':''}" style="${ch[i.id]?'opacity:.5':''}">
+    <td><button class="chk ${ch[i.id]?'on':''}" data-s="${i.id}" aria-label="Marcar ${i.n}">${ch[i.id]?'✓':''}</button></td>
+    <td style="${ch[i.id]?'text-decoration:line-through':''}">${i.n}${i.note?`<div class="imac" style="white-space:normal">${i.note}</div>`:''}</td>
+    <td class="n" style="white-space:nowrap">${i.q}</td><td class="n">${i.buy}</td></tr>`).join('');
+  document.querySelectorAll('[data-s]').forEach(el=>el.onclick=()=>toggleShop(key, el.dataset.s));
+}
+let shopTimer=null;
+function saveShop(){
+  clearTimeout(shopTimer);
+  shopTimer=setTimeout(()=>{ const keep={}; const cutoff=iso(weekStart(-8)); Object.keys(S.compras).forEach(k=>{ if(k>=cutoff) keep[k]=S.compras[k]; }); S.compras=keep; save('compras',{semanas:keep}); },600);
+}
+function toggleShop(key,id){ S.compras[key]={...(S.compras[key]||{})}; S.compras[key][id]=!S.compras[key][id]; renderCompra(); saveShop(); }
+$('#wk-prev').onclick=()=>{ wkOffset--; renderCompra(); };
+$('#wk-next').onclick=()=>{ wkOffset++; renderCompra(); };
+$('#wk-clear').onclick=()=>{ const k=iso(weekStart(wkOffset)); S.compras[k]={}; renderCompra(); saveShop(); };
+
 /* ---------- Render: Peso ---------- */
 function avgRange(fromDays, toDays){
   const now = new Date(today()+'T12:00:00').getTime();
@@ -418,21 +474,21 @@ $('#f-peso').addEventListener('submit', e=>{
 });
 
 /* ---------- Respaldo ---------- */
-$('#bk-exp').onclick=()=>{ $('#bk').value=JSON.stringify({v:1,pesos:S.pesos,checks:S.checks,factors:S.factors}); $('#bk-msg').textContent='Listo. Copialo y guardalo.'; };
+$('#bk-exp').onclick=()=>{ $('#bk').value=JSON.stringify({v:1,pesos:S.pesos,checks:S.checks,factors:S.factors,compras:S.compras}); $('#bk-msg').textContent='Listo. Copialo y guardalo.'; };
 $('#bk-copy').onclick=async()=>{ if(!$('#bk').value) $('#bk-exp').onclick(); try{ await navigator.clipboard.writeText($('#bk').value); $('#bk-msg').textContent='Copiado.'; }catch(e){ $('#bk').select(); $('#bk-msg').textContent='Seleccioná el texto y copialo a mano.'; } };
 $('#bk-imp').onclick=()=>{
   try{
     const d=JSON.parse($('#bk').value);
     if(!d || !Array.isArray(d.pesos)) throw 0;
     const map={}; S.pesos.concat(d.pesos).forEach(e=>{ if(e&&e.f&&e.kg>30) map[e.f]=e; });
-    S.pesos=Object.values(map); S.checks={...S.checks,...(d.checks||{})}; if(d.factors) S.factors={...DEF,...d.factors};
-    save('pesos',{items:S.pesos}); save('checks',{dias:S.checks}); save('config',{factors:S.factors});
+    S.pesos=Object.values(map); S.checks={...S.checks,...(d.checks||{})}; if(d.factors) S.factors={...DEF,...d.factors}; if(d.compras) S.compras={...S.compras,...d.compras};
+    save('pesos',{items:S.pesos}); save('checks',{dias:S.checks}); save('config',{factors:S.factors}); save('compras',{semanas:S.compras});
     renderAll(); $('#bk-msg').textContent='Importado ('+d.pesos.length+' pesajes).';
   }catch(e){ $('#bk-msg').textContent='Ese texto no es un respaldo válido.'; }
 };
 
 /* ---------- Navegación ---------- */
-const VIEWS=['hoy','peso','eq','aj'];
+const VIEWS=['hoy','compra','peso','eq','aj'];
 function show(v){
   if(!VIEWS.includes(v)) v='hoy';
   VIEWS.forEach(x=>$('#v-'+x).classList.toggle('hide',x!==v));
@@ -442,12 +498,12 @@ function show(v){
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ history.replaceState(null,'','#'+b.dataset.v); show(b.dataset.v); });
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
 
-function renderAll(){ renderHoy(); renderPeso(); renderAjustes(); renderEq(); }
+function renderAll(){ renderHoy(); renderCompra(); renderPeso(); renderAjustes(); renderEq(); }
 
 /* ---------- Arranque ---------- */
 // Primero lo guardado en este navegador, para mostrar algo enseguida
 (function(){
-  const c=lsGet('checks'), p=lsGet('pesos'), cf=lsGet('config');
+  const c=lsGet('checks'), p=lsGet('pesos'), cf=lsGet('config'), cp=lsGet('compras'); if(cp&&cp.semanas) S.compras=cp.semanas;
   if(c&&c.dias) S.checks=c.dias; if(p&&p.items) S.pesos=p.items; if(cf&&cf.factors) S.factors={...DEF,...cf.factors};
   show(location.hash.slice(1)); renderAll();
 })();
@@ -456,7 +512,8 @@ function renderAll(){ renderHoy(); renderPeso(); renderAjustes(); renderEq(); }
   if(store.mode!=='db'){ setStatus(); return; }
   const timer = setTimeout(()=>setStatus('No se pudo conectar con tu cuenta todavía. Mostrando lo guardado en este navegador.'),10000);
   try{
-    const [c,p,cf] = await Promise.all([load('checks'),load('pesos'),load('config')]);
+    const [c,p,cf,cp] = await Promise.all([load('checks'),load('pesos'),load('config'),load('compras')]);
+    if(cp&&cp.semanas) S.compras=cp.semanas;
     clearTimeout(timer);
     if(c&&c.dias) S.checks=c.dias;
     if(p&&Array.isArray(p.items)) S.pesos=p.items;
