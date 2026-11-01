@@ -189,12 +189,13 @@
 /* ---------- Datos del plan ---------- */
 const DEF = { pollo: 0.72, arroz: 2.9 };
 const MEALS = [
-  { id:'desayuno', name:'Desayuno', tip:'Panqueque de avena: licuá o pisá todo junto y cocinalo en una sartén antiadherente.',
+  { id:'desayuno', name:'Desayuno', tip:'La manteca es para cocinar los huevos. Si querés, hacé todo junto como panqueque de avena.',
     items:[
       { n:'Huevos enteros', raw:'3 u (~150 g)', ck:'3 u', k:216, p:19, f:14.4, c:1 },
       { n:'Claras', raw:'2 u (~66 g)', ck:'2 u', k:34, p:7.2, f:0.1, c:0.5 },
       { n:'Avena', raw:'80 g seca', ck:'—', k:303, p:10.6, f:5.2, c:54 },
       { n:'Banana', raw:'1 mediana (~120 g pelada)', ck:'—', k:107, p:1.3, f:0.4, c:27 },
+      { n:'Manteca', raw:'12 g (~1 cda rasa)', ck:'12 g', k:86, p:0.1, f:9.7, c:0 },
     ]},
   { id:'almuerzo', name:'Almuerzo', items: null },
   { id:'merienda', name:'Merienda', tip:'No hay que cocinar nada en el momento: hervís los huevos de antemano y se lleva fácil.',
@@ -205,12 +206,13 @@ const MEALS = [
     ]},
   { id:'cena', name:'Cena', items: null },
 ];
-function lunchItems(fp, fa){
-  return [
+function lunchItems(fp, fa, butter){
+  const it = [
     { n:'Pechuga de pollo', raw:'250 g crudo', ck:'≈ '+Math.round(250*fp)+' g cocido', k:300, p:56.3, f:6.5, c:0 },
     { n:'Arroz blanco', raw:'90 g crudo', ck:'≈ '+Math.round(90*fa)+' g cocido', k:324, p:5.9, f:0.5, c:71.1 },
-    { n:'Manteca', raw:'12 g (~1 cda rasa)', ck:'12 g', k:86, p:0.1, f:9.7, c:0 },
   ];
+  if(butter) it.push({ n:'Manteca', raw:'12 g (~1 cda rasa)', ck:'12 g', k:86, p:0.1, f:9.7, c:0 });
+  return it;
 }
 
 /* ---------- Intercambiables (macros cada 100 g en crudo/seco) ---------- */
@@ -221,11 +223,16 @@ const F100 = {
   kiwi:[61,1.1,0.5,14.7], manzana:[52,0.3,0.2,13.8], naranja:[47,0.9,0.1,11.8], mandarina:[53,0.8,0.3,13.3], banana:[89,1.1,0.3,22.8]
 };
 const EQ = [
+  { t:'Comida completa (en vez del almuerzo o la cena)', rows:[
+    { n:'Pollo + arroz', raw:'250 g pollo + 90 g arroz', m:{k:624,p:62.2,f:7,c:71.1}, base:true },
+    { n:'Pizza Fakin Bomb entera', raw:'1 pizza (~440 g)', m:{k:936,p:70,f:27,c:105} },
+    { n:'Media pizza Fakin Bomb', raw:'½ pizza (~220 g)', m:{k:468,p:35,f:13.6,c:52.5} },
+  ], foot:'<b>Pizza entera:</b> son ~310 kcal más que pollo con arroz. Ese día sacá el arroz de la otra comida para compensar. <b>Media pizza:</b> son ~150 kcal menos, pero también ~27 g menos de proteína. Los macros salen de la etiqueta (100 g = ¼ de pizza), ajustados a los 70 g de proteína de la pizza entera.' },
   { t:'Proteína de almuerzo y cena (en vez de 250 g de pollo)', rows:[
     { n:'Pechuga de pollo', f:'pechuga', g:250, ck:fp=>'≈ '+Math.round(250*fp)+' g', base:true },
     { n:'Nalga de ternera', f:'nalga', g:260, ck:()=>'≈ 180 g' },
     { n:'Pulpón', f:'pulpon', g:265, ck:()=>'≈ 185 g' },
-    { n:'Vacío', f:'vacio', g:250, ck:()=>'≈ 165 g', note:'Es un corte graso: el día que lo comas, no le pongas manteca a esa comida. Aun así aporta ~10 g menos de proteína y ~200 kcal más que el pollo con manteca, así que mejor de vez en cuando.' },
+    { n:'Vacío', f:'vacio', g:250, ck:()=>'≈ 165 g', note:'Es un corte graso: aporta ~10 g menos de proteína y ~300 kcal más que el pollo. Si va en la cena, sacale la manteca. Mejor de vez en cuando.' },
   ]},
   { t:'Proteína de la merienda (en vez del atún)', rows:[
     { n:'Atún al agua', f:'atun', g:120, raw:'1 lata', ck:()=>'120 g escurrido', base:true },
@@ -235,7 +242,10 @@ const EQ = [
     { n:'Merluza', f:'merluza', g:170, ck:()=>'≈ 130 g' },
     { n:'Claras de huevo', f:'claras', g:260, raw:'8 claras (~260 g)', ck:()=>'igual' },
     { n:'Sardinas en lata', f:'sardinas', g:125, raw:'2 latas', ck:()=>'125 g escurridas' },
-  ]},
+    { n:'Barrita Just Fit (promedio de sabores)', raw:'1 barra (70 g)', m:{k:158,p:20,f:2.7,c:13.7} },
+    { n:'Barrita Merlín (promedio de sabores)', raw:'1 barra (55 g)', m:{k:167,p:16,f:5.1,c:16.9} },
+    { n:'Protein Bar Fakin Bomb', raw:'1 barra entera (60 g)', m:{k:234,p:19.2,f:7.5,c:22.5}, note:'Aporta casi lo mismo que el atún y los kiwis juntos: si la comés, sacá las dos cosas.' },
+  ], foot:'Las barritas tienen menos proteína que el atún (16 a 20 g contra 31 g) y suman carbohidratos. El día que comas una, podés sacar los kiwis.' },
   { t:'Carbohidratos (en vez de 90 g de arroz)', rows:[
     { n:'Arroz blanco', f:'arroz', g:90, ck:(fp,fa)=>'≈ '+Math.round(90*fa)+' g', base:true },
     { n:'Fideos secos', f:'fideos', g:90, ck:()=>'≈ 215 g' },
@@ -243,23 +253,29 @@ const EQ = [
     { n:'Boniato', f:'boniato', g:360, ck:()=>'≈ 360 g hervido' },
     { n:'Lentejas', f:'lentejas', g:100, ck:()=>'≈ 250 g', note:'Las lentejas suman además unos 25 g de proteína.' },
   ]},
-  { t:'Fruta (en vez de 2 kiwis)', rows:[
+  { t:'Fruta o snack de la merienda (en vez de 2 kiwis)', rows:[
     { n:'Kiwis', f:'kiwi', g:150, raw:'2 u (~150 g)', ck:()=>'—', base:true },
     { n:'Naranja', f:'naranja', g:180, raw:'1 grande (~180 g)', ck:()=>'—' },
     { n:'Mandarinas', f:'mandarina', g:170, raw:'2 u (~170 g)', ck:()=>'—' },
     { n:'Manzana', f:'manzana', g:170, raw:'1 mediana (~170 g)', ck:()=>'—' },
     { n:'Banana', f:'banana', g:100, raw:'1 chica (~100 g)', ck:()=>'—' },
+    { n:'Mini galletas de arroz Saman', raw:'30 g (~13 galletitas)', m:{k:109,p:2.5,f:0,c:24} },
+    { n:'Ticholo Mariola Zero', raw:'3 unidades (45 g)', m:{k:96,p:0,f:0,c:24} },
   ]},
+  { t:'Untables (se suman a lo del día)', rows:[
+    { n:'Casancrem Light', raw:'30 g (2 cdas soperas al ras)', m:{k:36,p:2.4,f:1.7,c:2.8} },
+    { n:'Conacrem 0% Lactosa', raw:'30 g (2 cdas soperas al ras)', m:{k:39,p:2.8,f:2.3,c:1.9} },
+  ], foot:'1 cucharada sopera al ras ≈ 15 g; una colmada ≈ 30 g. Van bien con las galletas de arroz. Con 2 cucharadas al día, el plan no cambia en la práctica.' },
 ];
 function macroLine(i){ const d=(x)=>fmt(x, x>0&&x<10?1:0); return `<div class="imac">${fmt(i.k)} kcal · <b style="color:var(--p)">P ${d(i.p)}</b> · <b style="color:var(--f)">G ${d(i.f)}</b> · <b style="color:var(--c)">C ${d(i.c)}</b></div>`; }
 function renderEq(){
   const fp=S.factors.pollo, fa=S.factors.arroz;
   $('#eq-list').innerHTML = EQ.map(gr=>`<div class="card"><h3>${gr.t}</h3>
     <table><thead><tr><th>Alimento</th><th>Crudo / seco</th><th>Cocido</th></tr></thead><tbody>
-    ${gr.rows.map(r=>{ const v=F100[r.f], m={k:v[0]*r.g/100,p:v[1]*r.g/100,f:v[2]*r.g/100,c:v[3]*r.g/100};
-      return `<tr><td>${r.n}${r.base?' <span class="pill">base</span>':''}${macroLine(m)}</td><td class="n">${r.raw||r.g+' g'}</td><td class="n">${r.ck(fp,fa)}</td></tr>`; }).join('')}
+    ${gr.rows.map(r=>{ const v=F100[r.f], m=r.m||{k:v[0]*r.g/100,p:v[1]*r.g/100,f:v[2]*r.g/100,c:v[3]*r.g/100};
+      return `<tr><td>${r.n}${r.base?' <span class="pill">base</span>':''}${macroLine(m)}</td><td class="n">${r.raw||r.g+' g'}</td><td class="n">${r.ck?r.ck(fp,fa):'—'}</td></tr>`; }).join('')}
     </tbody></table>
-    ${gr.rows.filter(r=>r.note).map(r=>`<div class="note"><b>${r.n}:</b> ${r.note}</div>`).join('')}
+    ${gr.rows.filter(r=>r.note).map(r=>`<div class="note"><b>${r.n}:</b> ${r.note}</div>`).join('')}${gr.foot?`<div class="note">${gr.foot}</div>`:''}
   </div>`).join('');
 }
 
@@ -309,7 +325,7 @@ async function initStore(){
 }
 
 /* ---------- Render: Hoy ---------- */
-function mealItems(m){ return m.items || lunchItems(S.factors.pollo, S.factors.arroz); }
+function mealItems(m){ return m.items || lunchItems(S.factors.pollo, S.factors.arroz, m.id==='cena'); }
 function sum(items){ return items.reduce((a,i)=>({k:a.k+i.k,p:a.p+i.p,f:a.f+i.f,c:a.c+i.c}),{k:0,p:0,f:0,c:0}); }
 function planTotals(){ return MEALS.reduce((a,m)=>{ const s=sum(mealItems(m)); return {k:a.k+s.k,p:a.p+s.p,f:a.f+s.f,c:a.c+s.c}; },{k:0,p:0,f:0,c:0}); }
 
