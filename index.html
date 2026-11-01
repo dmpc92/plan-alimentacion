@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan de alimentación</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f7d4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Plan">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#f6f5f1; --card:#ffffff; --ink:#1d1d1b; --muted:#6b6a64; --line:#e4e2da;
+    --acc:#2f7d4f; --acc-soft:#e3f1e8; --p:#c0532b; --f:#c99a1c; --c:#3f6fb5; --warn:#a4471f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#161614; --card:#20201e; --ink:#eeede8; --muted:#9c9a92; --line:#33322e;
+      --acc:#5cb37f; --acc-soft:#1f3328; --p:#e07a52; --f:#e0b84a; --c:#6f9ae0; --warn:#e48a62; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 90px}
+  h1{font-size:20px;margin:4px 0 2px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:5}
+  nav button{flex:1;max-width:160px;background:none;border:0;padding:12px 4px 14px;font:inherit;font-size:13px;color:var(--muted);cursor:pointer}
+  nav button.on{color:var(--acc);font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .meal-h{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .meal-h h2{font-size:16px;margin:0;flex:1}
+  .chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;background:none;cursor:pointer;color:#fff;font-size:15px}
+  .chk.on{background:var(--acc);border-color:var(--acc)}
+  .card.done{opacity:.6}
+  .mac{font-size:12px;color:var(--muted);white-space:nowrap}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;font-weight:600;padding:4px 4px 6px;border-bottom:1px solid var(--line)}
+  td{padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.n{font-variant-numeric:tabular-nums}
+  .note{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .bars{display:grid;gap:9px}
+  .bar-l{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
+  .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px;transition:width .3s}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  input{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+  label{font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px}
+  .btn{font:inherit;font-weight:600;padding:10px 16px;border-radius:8px;border:0;background:var(--acc);color:#fff;cursor:pointer}
+  .btn.ghost{background:none;color:var(--muted);border:1px solid var(--line);font-weight:500;padding:6px 10px;font-size:13px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums}
+  .stat small{font-size:13px;font-weight:500;color:var(--muted)}
+  .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--acc-soft);color:var(--acc);font-weight:600}
+  .warn{color:var(--warn)}
+  .status{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+  h3{font-size:14px;margin:0 0 6px}
+  .hide{display:none}
+  .totals-mini{display:flex;gap:12px;font-size:13px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+  .imac{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap}
+  .imac b{font-weight:600}
+  .del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px}
+  svg text{fill:var(--muted);font-size:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Plan de alimentación</h1>
+  <div class="sub" id="subt">Bajar grasa / recomposición</div>
+
+  <!-- HOY -->
+  <section id="v-hoy">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <h3 style="margin:0" id="hoy-fecha">Hoy</h3>
+        <span class="pill" id="hoy-count">0/4 comidas</span>
+      </div>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div id="meals"></div>
+    <div class="note" style="margin:4px 2px 12px">Pesá el arroz y la avena secos, y el pollo crudo. Si cocinás el pollo en tanda, cargá tu factor de cocción en <b>Ajustes</b> para ver el peso cocido exacto.</div>
+  </section>
+
+  <!-- PESO -->
+  <section id="v-peso" class="hide">
+    <div class="card">
+      <h3>Registrar peso</h3>
+      <form id="f-peso" class="row" style="align-items:flex-end">
+        <div style="flex:1;min-width:120px"><label for="p-fecha">Fecha</label><input type="date" id="p-fecha"></div>
+        <div style="flex:1;min-width:90px"><label for="p-kg">Kg</label><input type="number" id="p-kg" step="0.1" min="30" max="300" inputmode="decimal" placeholder="94.0"></div>
+        <button class="btn" type="submit">Guardar</button>
+      </form>
+      <div class="note">Pesate en ayunas, después del baño. Lo que importa es el promedio semanal, no el dato de un día.</div>
+    </div>
+    <div class="card">
+      <div class="grid2">
+        <div><label>Promedio últimos 7 días</label><div class="stat" id="avg7">—</div></div>
+        <div><label>Cambio vs 7 días previos</label><div class="stat" id="delta7">—</div></div>
+      </div>
+      <div class="note" id="trend-msg">Objetivo: bajar entre 0,5 y 0,9 kg por semana.</div>
+      <div id="chart" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <h3>Historial</h3>
+      <table><thead><tr><th>Fecha</th><th>Kg</th><th></th></tr></thead><tbody id="p-list"></tbody></table>
+    </div>
+  </section>
+
+  <!-- INTERCAMBIABLES -->
+  <section id="v-eq" class="hide">
+    <div class="note" style="margin:0 2px 12px">Cada grupo arranca con el alimento del plan (base) y sigue con cambios de macros parecidos. Pesos crudos o secos; el cocido es aproximado.</div>
+    <div id="eq-list"></div>
+    <div class="card">
+      <h3>Desayuno sin panqueque</h3>
+      <div>Cociná la avena con agua (80 g seca + ~250 ml de agua, unos 330 g cocida) con la banana pisada, y hacé los huevos y las claras revueltos aparte. Los macros no cambian.</div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="v-aj" class="hide">
+    <div class="card">
+      <h3>Factor de cocción del pollo</h3>
+      <div class="note" style="margin:0 0 10px">Pesá la tanda cruda, cocinala y volvé a pesarla. Con eso se calcula cuántos gramos cocidos equivalen a tu porción cruda.</div>
+      <div class="grid2">
+        <div><label for="pc-crudo">Tanda cruda (g)</label><input type="number" id="pc-crudo" inputmode="numeric" placeholder="1000"></div>
+        <div><label for="pc-cocido">Tanda cocida (g)</label><input type="number" id="pc-cocido" inputmode="numeric" placeholder="720"></div>
+      </div>
+      <div class="note" id="pc-res"></div>
+    </div>
+    <div class="card">
+      <h3>Factor de cocción del arroz</h3>
+      <div class="grid2">
+        <div><label for="ac-crudo">Crudo (g)</label><input type="number" id="ac-crudo" inputmode="numeric" placeholder="300"></div>
+        <div><label for="ac-cocido">Cocido (g)</label><input type="number" id="ac-cocido" inputmode="numeric" placeholder="870"></div>
+      </div>
+      <div class="note" id="ac-res"></div>
+      <button class="btn" id="save-f" style="margin-top:10px">Guardar factores</button>
+      <button class="btn ghost" id="reset-f" style="margin-top:10px">Volver a los estándar</button>
+    </div>
+    <div class="card">
+      <h3>Objetivos según tu último peso</h3>
+      <div id="targets"></div>
+      <div class="note">Cálculo: kcal = peso × 26,5 (bajar grasa) · proteína 2,2 g/kg · grasa 24 % de las kcal · carbohidratos, el resto.</div>
+    </div>
+    <div class="card">
+      <h3>Respaldo</h3>
+      <div class="note" style="margin:0 0 10px">Exportá tus datos (pesos, checks y factores) como texto para guardarlos o pasarlos a otro dispositivo. Para restaurarlos, pegá ese texto y tocá Importar.</div>
+      <textarea id="bk" rows="4" style="width:100%;font:12px ui-monospace,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)" placeholder="Acá aparece el respaldo, o pegá uno para importar"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost" id="bk-exp">Exportar</button>
+        <button class="btn ghost" id="bk-copy">Copiar</button>
+        <button class="btn ghost" id="bk-imp">Importar</button>
+        <span class="note" id="bk-msg" style="margin:0"></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="status" id="status">Cargando…</div>
+</div>
+
+<nav>
+  <button data-v="hoy" class="on">Hoy</button>
+  <button data-v="peso">Peso</button>
+  <button data-v="eq">Intercambiables</button>
+  <button data-v="aj">Ajustes</button>
+</nav>
+
+<script>
+/* ---------- Datos del plan ---------- */
+const DEF = { pollo: 0.72, arroz: 2.9 };
+const MEALS = [
+  { id:'desayuno', name:'Desayuno', tip:'Panqueque de avena: licuá o pisá todo junto y cocinalo en una sartén antiadherente.',
+    items:[
+      { n:'Huevos enteros', raw:'3 u (~150 g)', ck:'3 u', k:216, p:19, f:14.4, c:1 },
+      { n:'Claras', raw:'2 u (~66 g)', ck:'2 u', k:34, p:7.2, f:0.1, c:0.5 },
+      { n:'Avena', raw:'80 g seca', ck:'—', k:303, p:10.6, f:5.2, c:54 },
+      { n:'Banana', raw:'1 mediana (~120 g pelada)', ck:'—', k:107, p:1.3, f:0.4, c:27 },
+    ]},
+  { id:'almuerzo', name:'Almuerzo', items: null },
+  { id:'merienda', name:'Merienda', tip:'No hay que cocinar nada en el momento: hervís los huevos de antemano y se lleva fácil.',
+    items:[
+      { n:'Huevos duros', raw:'2 u', ck:'2 u', k:144, p:12.6, f:9.6, c:0.8 },
+      { n:'Atún al agua', raw:'1 lata', ck:'120 g escurrido', k:139, p:30.6, f:1, c:0 },
+      { n:'Kiwis', raw:'2 u (~150 g pelados)', ck:'—', k:92, p:1.7, f:0.8, c:22 },
+    ]},
+  { id:'cena', name:'Cena', items: null },
+];
+function lunchItems(fp, fa){
+  return [
+    { n:'Pechuga de pollo', raw:'250 g crudo', ck:'≈ '+Math.round(250*fp)+' g cocido', k:300, p:56.3, f:6.5, c:0 },
+    { n:'Arroz blanco', raw:'90 g crudo', ck:'≈ '+Math.round(90*fa)+' g cocido', k:324, p:5.9, f:0.5, c:71.1 },
+    { n:'Manteca', raw:'12 g (~1 cda rasa)', ck:'12 g', k:86, p:0.1, f:9.7, c:0 },
+  ];
+}
+
+/* ---------- Intercambiables (macros cada 100 g en crudo/seco) ---------- */
+const F100 = {
+  pechuga:[120,22.5,2.6,0], nalga:[125,21.5,4.3,0], pulpon:[130,21,5,0], vacio:[240,18,18.5,0],
+  merluza:[86,18,1.3,0], atun:[116,25.5,0.8,0], claras:[52,10.9,0.2,0.7], sardinas:[208,24.6,11.5,0],
+  arroz:[360,6.6,0.6,79], fideos:[371,13,1.5,75], papa:[77,2,0.1,17.5], boniato:[86,1.6,0.1,20], lentejas:[352,24.6,1.1,63],
+  kiwi:[61,1.1,0.5,14.7], naranja:[47,0.9,0.1,11.8], mandarina:[53,0.8,0.3,13.3], banana:[89,1.1,0.3,22.8]
+};
+const EQ = [
+  { t:'Proteína de almuerzo y cena (en vez de 250 g de pollo)', rows:[
+    { n:'Pechuga de pollo', f:'pechuga', g:250, ck:fp=>'≈ '+Math.round(250*fp)+' g', base:true },
+    { n:'Nalga de ternera', f:'nalga', g:260, ck:()=>'≈ 180 g' },
+    { n:'Pulpón', f:'pulpon', g:265, ck:()=>'≈ 185 g' },
+    { n:'Vacío', f:'vacio', g:250, ck:()=>'≈ 165 g', note:'Es un corte graso: el día que lo comas, no le pongas manteca a esa comida. Aun así aporta ~10 g menos de proteína y ~200 kcal más que el pollo con manteca, así que mejor de vez en cuando.' },
+  ]},
+  { t:'Proteína de la merienda (en vez del atún)', rows:[
+    { n:'Atún al agua', f:'atun', g:120, raw:'1 lata', ck:()=>'120 g escurrido', base:true },
+    { n:'Pechuga de pollo', f:'pechuga', g:135, ck:fp=>'≈ '+Math.round(135*fp)+' g' },
+    { n:'Nalga de ternera', f:'nalga', g:140, ck:()=>'≈ 100 g' },
+    { n:'Pulpón', f:'pulpon', g:140, ck:()=>'≈ 100 g' },
+    { n:'Merluza', f:'merluza', g:170, ck:()=>'≈ 130 g' },
+    { n:'Claras de huevo', f:'claras', g:260, raw:'8 claras (~260 g)', ck:()=>'igual' },
+    { n:'Sardinas en lata', f:'sardinas', g:125, raw:'2 latas', ck:()=>'125 g escurridas' },
+  ]},
+  { t:'Carbohidratos (en vez de 90 g de arroz)', rows:[
+    { n:'Arroz blanco', f:'arroz', g:90, ck:(fp,fa)=>'≈ '+Math.round(90*fa)+' g', base:true },
+    { n:'Fideos secos', f:'fideos', g:90, ck:()=>'≈ 215 g' },
+    { n:'Papa', f:'papa', g:410, ck:()=>'≈ 410 g hervida / 300 g al horno' },
+    { n:'Boniato', f:'boniato', g:360, ck:()=>'≈ 360 g hervido' },
+    { n:'Lentejas', f:'lentejas', g:100, ck:()=>'≈ 250 g', note:'Las lentejas suman además unos 25 g de proteína.' },
+  ]},
+  { t:'Fruta (en vez de 2 kiwis)', rows:[
+    { n:'Kiwis', f:'kiwi', g:150, raw:'2 u (~150 g)', ck:()=>'—', base:true },
+    { n:'Naranja', f:'naranja', g:180, raw:'1 grande (~180 g)', ck:()=>'—' },
+    { n:'Mandarinas', f:'mandarina', g:170, raw:'2 u (~170 g)', ck:()=>'—' },
+    { n:'Banana', f:'banana', g:100, raw:'1 chica (~100 g)', ck:()=>'—' },
+  ]},
+];
+function macroLine(i){ const d=(x)=>fmt(x, x>0&&x<10?1:0); return `<div class="imac">${fmt(i.k)} kcal · <b style="color:var(--p)">P ${d(i.p)}</b> · <b style="color:var(--f)">G ${d(i.f)}</b> · <b style="color:var(--c)">C ${d(i.c)}</b></div>`; }
+function renderEq(){
+  const fp=S.factors.pollo, fa=S.factors.arroz;
+  $('#eq-list').innerHTML = EQ.map(gr=>`<div class="card"><h3>${gr.t}</h3>
+    <table><thead><tr><th>Alimento</th><th>Crudo / seco</th><th>Cocido</th></tr></thead><tbody>
+    ${gr.rows.map(r=>{ const v=F100[r.f], m={k:v[0]*r.g/100,p:v[1]*r.g/100,f:v[2]*r.g/100,c:v[3]*r.g/100};
+      return `<tr><td>${r.n}${r.base?' <span class="pill">base</span>':''}${macroLine(m)}</td><td class="n">${r.raw||r.g+' g'}</td><td class="n">${r.ck(fp,fa)}</td></tr>`; }).join('')}
+    </tbody></table>
+    ${gr.rows.filter(r=>r.note).map(r=>`<div class="note"><b>${r.n}:</b> ${r.note}</div>`).join('')}
+  </div>`).join('');
+}
+
+/* ---------- Estado ---------- */
+const S = { checks:{}, pesos:[], factors:{...DEF} };
+const today = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const $ = s => document.querySelector(s);
+const fmt = (x,d=0) => Number(x).toLocaleString('es-UY',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* ---------- Almacenamiento: db privado del usuario, o este navegador ---------- */
+const store = { db:null, uid:null, mode:'none' };
+const LSK = 'planmacros:';
+function lsGet(k){ try{ const v=localStorage.getItem(LSK+k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(LSK+k, JSON.stringify(v)); }catch(e){} }
+const queues = {};
+async function save(key, body){
+  lsSet(key, body);
+  if(store.mode!=='db') return;
+  queues[key] = (queues[key]||Promise.resolve()).then(async ()=>{
+    try{ await store.db.doc('data/users/'+store.uid+'/'+key).set(body); setStatus(); }
+    catch(e){
+      if(e && e.code==='unavailable'){ await new Promise(r=>setTimeout(r,800+Math.random()*800)); try{ await store.db.doc('data/users/'+store.uid+'/'+key).set(body); return; }catch(_){} }
+      setStatus('No se pudo guardar en la nube. Quedó guardado solo en este navegador.');
+    }
+  });
+  return queues[key];
+}
+async function load(key){
+  if(store.mode==='db'){
+    const snap = await store.db.doc('data/users/'+store.uid+'/'+key).get();
+    if(snap.exists) return snap.data();
+    return null;
+  }
+  return lsGet(key);
+}
+function setStatus(msg){
+  $('#status').textContent = msg || (store.mode==='db' ? 'Guardado en tu cuenta: lo ves igual desde cualquier dispositivo.' : 'Guardado en este dispositivo. Hacé un respaldo en Ajustes de vez en cuando.');
+}
+async function initStore(){
+  try{
+    if(window.claude && typeof window.claude.use==='function'){
+      const [db,user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      if(db && user){ const id = await user.id(); if(id){ store.db=db; store.uid=id; store.mode='db'; } }
+    }
+  }catch(e){}
+  if(store.mode!=='db') store.mode='local';
+}
+
+/* ---------- Render: Hoy ---------- */
+function mealItems(m){ return m.items || lunchItems(S.factors.pollo, S.factors.arroz); }
+function sum(items){ return items.reduce((a,i)=>({k:a.k+i.k,p:a.p+i.p,f:a.f+i.f,c:a.c+i.c}),{k:0,p:0,f:0,c:0}); }
+function planTotals(){ return MEALS.reduce((a,m)=>{ const s=sum(mealItems(m)); return {k:a.k+s.k,p:a.p+s.p,f:a.f+s.f,c:a.c+s.c}; },{k:0,p:0,f:0,c:0}); }
+
+function renderHoy(){
+  const d = today(); const ch = S.checks[d] || {};
+  const dt = new Date(d+'T12:00:00');
+  $('#hoy-fecha').textContent = dt.toLocaleDateString('es-UY',{weekday:'long',day:'numeric',month:'long'}).replace(/^./,c=>c.toUpperCase());
+  const tot = planTotals();
+  let eaten = {k:0,p:0,f:0,c:0}, n=0;
+  MEALS.forEach(m=>{ if(ch[m.id]){ n++; const s=sum(mealItems(m)); eaten.k+=s.k; eaten.p+=s.p; eaten.f+=s.f; eaten.c+=s.c; } });
+  $('#hoy-count').textContent = n+'/4 comidas';
+  const rows = [['Calorías','k','kcal','var(--acc)'],['Proteína','p','g','var(--p)'],['Grasa','f','g','var(--f)'],['Carbohidratos','c','g','var(--c)']];
+  $('#bars').innerHTML = rows.map(([l,key,u,col])=>`
+    <div><div class="bar-l"><span>${l}</span><span class="mac">${fmt(eaten[key])} / ${fmt(tot[key])} ${u}</span></div>
+    <div class="bar"><i style="width:${Math.min(100,eaten[key]/tot[key]*100)}%;background:${col}"></i></div></div>`).join('');
+
+  $('#meals').innerHTML = MEALS.map(m=>{
+    const it = mealItems(m), s = sum(it), on = !!ch[m.id];
+    return `<div class="card ${on?'done':''}">
+      <div class="meal-h" data-m="${m.id}">
+        <button class="chk ${on?'on':''}" aria-label="Marcar ${m.name}" data-m="${m.id}">${on?'✓':''}</button>
+        <h2>${m.name}</h2>
+        <span class="mac">${fmt(s.k)} kcal · P ${fmt(s.p)} · G ${fmt(s.f)} · C ${fmt(s.c)}</span>
+      </div>
+      <table><thead><tr><th>Alimento</th><th>Crudo / seco</th><th>Cocido</th></tr></thead><tbody>
+        ${it.map(i=>`<tr><td>${i.n}${macroLine(i)}</td><td class="n">${i.raw}</td><td class="n">${i.ck}</td></tr>`).join('')}
+      </tbody></table>
+      ${m.tip?`<div class="note">${m.tip}</div>`:''}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.meal-h').forEach(el=>el.onclick=()=>toggle(el.dataset.m));
+}
+let checksTimer=null;
+function toggle(id){
+  const d=today(); S.checks[d] = {...(S.checks[d]||{})};
+  S.checks[d][id] = !S.checks[d][id];
+  renderHoy();
+  clearTimeout(checksTimer);
+  checksTimer = setTimeout(()=>{
+    const keep = {}; const cutoff = new Date(Date.now()-60*864e5).toISOString().slice(0,10);
+    Object.keys(S.checks).forEach(k=>{ if(k>=cutoff) keep[k]=S.checks[k]; });
+    S.checks = keep; save('checks',{dias:keep});
+  },600);
+}
+
+/* ---------- Render: Peso ---------- */
+function avgRange(fromDays, toDays){
+  const now = new Date(today()+'T12:00:00').getTime();
+  const xs = S.pesos.filter(e=>{ const age=(now-new Date(e.f+'T12:00:00').getTime())/864e5; return age>=fromDays && age<toDays; });
+  return xs.length ? xs.reduce((a,e)=>a+e.kg,0)/xs.length : null;
+}
+function renderPeso(){
+  const list = [...S.pesos].sort((a,b)=>b.f.localeCompare(a.f));
+  $('#p-list').innerHTML = list.length ? list.map(e=>`<tr><td>${new Date(e.f+'T12:00:00').toLocaleDateString('es-UY',{weekday:'short',day:'numeric',month:'short'})}</td><td class="n">${fmt(e.kg,1)}</td><td style="text-align:right"><button class="del" data-f="${e.f}" aria-label="Borrar">×</button></td></tr>`).join('')
+    : '<tr><td colspan="3" class="note">Todavía no hay registros.</td></tr>';
+  document.querySelectorAll('.del').forEach(b=>b.onclick=()=>{ S.pesos=S.pesos.filter(e=>e.f!==b.dataset.f); save('pesos',{items:S.pesos}); renderAll(); });
+  const a7 = avgRange(0,7), p7 = avgRange(7,14);
+  $('#avg7').innerHTML = a7!=null ? fmt(a7,1)+' <small>kg</small>' : '—';
+  if(a7!=null && p7!=null){
+    const d = a7-p7;
+    $('#delta7').innerHTML = (d>0?'+':'')+fmt(d,2)+' <small>kg</small>';
+    let msg;
+    if(d>-0.4) msg='<span class="warn">Bajaste menos de 0,4 kg. Si se repite una segunda semana, sacá 40 g de arroz por día.</span>';
+    else if(d<-1) msg='<span class="warn">Bajaste más de 1 kg. Si te cuesta entrenar, sumá 40 g de arroz.</span>';
+    else msg='Vas bien: estás dentro del objetivo de 0,5 a 0,9 kg por semana.';
+    $('#trend-msg').innerHTML = msg;
+  } else { $('#delta7').textContent='—'; $('#trend-msg').textContent='Objetivo: bajar entre 0,5 y 0,9 kg por semana. El cambio aparece cuando tengas dos semanas de datos.'; }
+  renderChart();
+}
+function renderChart(){
+  const xs = [...S.pesos].sort((a,b)=>a.f.localeCompare(b.f)).slice(-60);
+  if(xs.length<2){ $('#chart').innerHTML=''; return; }
+  const W=600,H=160,pl=34,pr=8,pt=8,pb=18;
+  const t0=new Date(xs[0].f).getTime(), t1=new Date(xs[xs.length-1].f).getTime()||t0+1;
+  const ks=xs.map(e=>e.kg); let lo=Math.min(...ks), hi=Math.max(...ks); if(hi-lo<1){ lo-=0.5; hi+=0.5; }
+  const X=t=>pl+(t-t0)/Math.max(1,t1-t0)*(W-pl-pr), Y=k=>pt+(hi-k)/(hi-lo)*(H-pt-pb);
+  // media móvil de 7 días
+  const ma = xs.map(e=>{ const t=new Date(e.f).getTime(); const w=xs.filter(o=>{const u=new Date(o.f).getTime(); return u<=t && u>t-7*864e5;}); return [t, w.reduce((a,o)=>a+o.kg,0)/w.length]; });
+  const path = ma.map(([t,k],i)=>(i?'L':'M')+X(t).toFixed(1)+' '+Y(k).toFixed(1)).join(' ');
+  const dots = xs.map(e=>`<circle cx="${X(new Date(e.f).getTime()).toFixed(1)}" cy="${Y(e.kg).toFixed(1)}" r="2.5" fill="var(--muted)" opacity=".5"/>`).join('');
+  $('#chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolución del peso">
+    <line x1="${pl}" x2="${W-pr}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--line)"/><line x1="${pl}" x2="${W-pr}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--line)"/>
+    <text x="0" y="${Y(hi)+3}">${fmt(hi,1)}</text><text x="0" y="${Y(lo)+3}">${fmt(lo,1)}</text>
+    ${dots}<path d="${path}" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg><div class="note" style="margin-top:2px">Puntos: pesajes diarios · Línea: promedio de 7 días</div>`;
+}
+
+/* ---------- Render: Ajustes ---------- */
+function renderAjustes(){
+  const fp=S.factors.pollo, fa=S.factors.arroz;
+  $('#pc-res').innerHTML = `Factor actual: <b>${fmt(fp,2)}</b>. 250 g crudo ≈ <b>${Math.round(250*fp)} g cocido</b>.${fp===DEF.pollo?' (estándar)':''}`;
+  $('#ac-res').innerHTML = `Factor actual: <b>${fmt(fa,2)}</b>. 90 g crudo ≈ <b>${Math.round(90*fa)} g cocido</b>.${fa===DEF.arroz?' (estándar)':''}`;
+  const last = [...S.pesos].sort((a,b)=>b.f.localeCompare(a.f))[0];
+  const kg = last ? last.kg : 94;
+  const k = Math.round(kg*26.5/50)*50, p=Math.round(kg*2.2), f=Math.round(k*0.24/9), c=Math.round((k-p*4-f*9)/4);
+  const t = planTotals();
+  const off = Math.abs(t.k-k)/k > 0.05;
+  $('#targets').innerHTML = `<table><thead><tr><th></th><th>Objetivo (${fmt(kg,1)} kg)</th><th>Plan actual</th></tr></thead><tbody>
+    <tr><td>Calorías</td><td class="n">${fmt(k)}</td><td class="n">${fmt(t.k)}</td></tr>
+    <tr><td>Proteína</td><td class="n">${p} g</td><td class="n">${fmt(t.p)} g</td></tr>
+    <tr><td>Grasa</td><td class="n">${f} g</td><td class="n">${fmt(t.f)} g</td></tr>
+    <tr><td>Carbohidratos</td><td class="n">${c} g</td><td class="n">${fmt(t.c)} g</td></tr></tbody></table>
+    ${off?'<div class="note warn">Las calorías del plan se apartan más de un 5 % del objetivo. Conviene ajustar las porciones.</div>':''}`;
+  $('#subt').textContent = `Bajar grasa / recomposición · ${fmt(t.k)} kcal · ${fmt(t.p)} g proteína`;
+}
+function calcFactor(a,b){ const x=parseFloat($(a).value), y=parseFloat($(b).value); return (x>0&&y>0)? y/x : null; }
+$('#save-f').onclick = ()=>{
+  const fp = calcFactor('#pc-crudo','#pc-cocido'), fa = calcFactor('#ac-crudo','#ac-cocido');
+  if(fp) S.factors.pollo = Math.round(fp*100)/100;
+  if(fa) S.factors.arroz = Math.round(fa*100)/100;
+  if(fp||fa){ save('config',{factors:S.factors}); renderAll(); }
+};
+$('#reset-f').onclick = ()=>{ S.factors={...DEF}; save('config',{factors:S.factors}); renderAll(); };
+
+/* ---------- Form peso ---------- */
+$('#p-fecha').value = today();
+$('#f-peso').addEventListener('submit', e=>{
+  e.preventDefault();
+  const f=$('#p-fecha').value, kg=parseFloat($('#p-kg').value);
+  if(!f || !(kg>30 && kg<300)) return;
+  S.pesos = S.pesos.filter(x=>x.f!==f).concat([{f, kg:Math.round(kg*10)/10}]);
+  save('pesos',{items:S.pesos});
+  $('#p-kg').value=''; renderAll();
+});
+
+/* ---------- Respaldo ---------- */
+$('#bk-exp').onclick=()=>{ $('#bk').value=JSON.stringify({v:1,pesos:S.pesos,checks:S.checks,factors:S.factors}); $('#bk-msg').textContent='Listo. Copialo y guardalo.'; };
+$('#bk-copy').onclick=async()=>{ if(!$('#bk').value) $('#bk-exp').onclick(); try{ await navigator.clipboard.writeText($('#bk').value); $('#bk-msg').textContent='Copiado.'; }catch(e){ $('#bk').select(); $('#bk-msg').textContent='Seleccioná el texto y copialo a mano.'; } };
+$('#bk-imp').onclick=()=>{
+  try{
+    const d=JSON.parse($('#bk').value);
+    if(!d || !Array.isArray(d.pesos)) throw 0;
+    const map={}; S.pesos.concat(d.pesos).forEach(e=>{ if(e&&e.f&&e.kg>30) map[e.f]=e; });
+    S.pesos=Object.values(map); S.checks={...S.checks,...(d.checks||{})}; if(d.factors) S.factors={...DEF,...d.factors};
+    save('pesos',{items:S.pesos}); save('checks',{dias:S.checks}); save('config',{factors:S.factors});
+    renderAll(); $('#bk-msg').textContent='Importado ('+d.pesos.length+' pesajes).';
+  }catch(e){ $('#bk-msg').textContent='Ese texto no es un respaldo válido.'; }
+};
+
+/* ---------- Navegación ---------- */
+const VIEWS=['hoy','peso','eq','aj'];
+function show(v){
+  if(!VIEWS.includes(v)) v='hoy';
+  VIEWS.forEach(x=>$('#v-'+x).classList.toggle('hide',x!==v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ history.replaceState(null,'','#'+b.dataset.v); show(b.dataset.v); });
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+
+function renderAll(){ renderHoy(); renderPeso(); renderAjustes(); renderEq(); }
+
+/* ---------- Arranque ---------- */
+// Primero lo guardado en este navegador, para mostrar algo enseguida
+(function(){
+  const c=lsGet('checks'), p=lsGet('pesos'), cf=lsGet('config');
+  if(c&&c.dias) S.checks=c.dias; if(p&&p.items) S.pesos=p.items; if(cf&&cf.factors) S.factors={...DEF,...cf.factors};
+  show(location.hash.slice(1)); renderAll();
+})();
+(async function(){
+  await initStore();
+  if(store.mode!=='db'){ setStatus(); return; }
+  const timer = setTimeout(()=>setStatus('No se pudo conectar con tu cuenta todavía. Mostrando lo guardado en este navegador.'),10000);
+  try{
+    const [c,p,cf] = await Promise.all([load('checks'),load('pesos'),load('config')]);
+    clearTimeout(timer);
+    if(c&&c.dias) S.checks=c.dias;
+    if(p&&Array.isArray(p.items)) S.pesos=p.items;
+    else if(S.pesos.length) save('pesos',{items:S.pesos}); // sube lo que había local
+    if(cf&&cf.factors) S.factors={...DEF,...cf.factors};
+    renderAll(); setStatus();
+  }catch(e){ clearTimeout(timer); store.mode='local'; setStatus(); }
+})();
+// PWA: funciona sin conexión cuando se instala desde tu propio hosting
+if('serviceWorker' in navigator && location.protocol==='https:'){ try{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){} }
+// Si la app queda abierta y cambia el día, se renueva la vista de hoy
+let lastDay = today(); setInterval(()=>{ if(today()!==lastDay){ lastDay=today(); renderHoy(); } },60000);
+</script>
+</body>
+</html>
